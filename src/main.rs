@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::Read;
 use clap::{App, Arg};
 
-const DEFAULT_MAX_LEN: i32 = 5;
+const DEFAULT_MAX_LEN: i32 = 3;
 const DEFAULT_CHARSET_FILE: &'static str = "./resources/charset";
 
 fn main() {
@@ -48,7 +48,7 @@ fn main() {
 
     // we will need to generate at most radix^max_len where char_set_len is the radix
     let max_num_results = charset.len().pow(max_len as u32) as i64;
-    let results = generate_permutations(0, 2000, &charset);
+    let results = generate_permutations(0, max_num_results, &charset);
 
     println!("results:");
     println!("{:?}", results);
@@ -57,6 +57,7 @@ fn main() {
 fn generate_permutations(start: i64, end: i64, charset: &Vec<char>) -> Option<Vec<String>> {
     let mut results: Vec<String> = vec![];
 
+    // generate permutations from start to end
     for i in start..end {
         let combination = make_permutation(i, charset)?;
         results.push(combination);
@@ -65,11 +66,15 @@ fn generate_permutations(start: i64, end: i64, charset: &Vec<char>) -> Option<Ve
     Some(results)
 }
 
+/// Creates the permutation for a charset based on an index i
+///
+/// The algorithm is really just a base-conversion from a decimal space (i)
+/// into the character space; in other words, it works the same way 
+/// as a dec-to-bin converter!
 fn make_permutation(i: i64, charset: &Vec<char>) -> Option<String> {
     let char_set_len = charset.len() as i32;
-
     let mut result: Vec<char> = Vec::new();
-
+    
     let mut current_value = i;
     loop {
         let remainder = current_value % char_set_len as i64;
