@@ -5,6 +5,7 @@ use std::io::Read;
 use clap::{App, Arg};
 
 const DEFAULT_MAX_LEN: i32 = 5;
+const DEFAULT_CHARSET_FILE: &'static str = "./resources/charset";
 
 fn main() {
     let args = App::new("brute")
@@ -26,52 +27,46 @@ fn main() {
             _ => DEFAULT_MAX_LEN,
         };
 
-    let char_set_file = args.value_of("charset").unwrap_or("./resources/charset");
-    let char_set = Ok(File::open(char_set_file)
-            .unwrap_or(File::open("./resources/charset").unwrap()))
+    let charset_file = args.value_of("charset").unwrap_or(DEFAULT_CHARSET_FILE);
+    let charset = Ok(File::open(charset_file)
+            .unwrap_or(File::open(DEFAULT_CHARSET_FILE).unwrap()))
         .and_then(|mut file| {
             let mut result = String::new();
 
+            // read the file into our String
             file.read_to_string(&mut result)
-                .and_then(|size| {
-                    let str_iter: Vec<char> = result.split(',')
-                        .into_iter()
-                        .map(|s: &str| {
-                            let index: usize = 0 as usize;
-                            let c: Vec<char> = s.chars().collect();
+                .and_then(|_| {
+                    // convert the contents of the file into a vec
+                    let chars: Vec<char> = result.chars().collect();
 
-                            *c.get(index).unwrap()
-                        })
-                        .collect();
-
-                    Ok(str_iter)
+                    Ok(chars)
                 })
         })
         .unwrap();
     
-    println!("char_set: {:?}", &char_set);
+    println!("char_set: {:?}", &charset);
 
-    let max_num_results = char_set.len().pow(max_len as u32) as i64;
-    let results = generate_permutations(0, 2000, &char_set);
+    // we will need to generate at most radix^max_len where char_set_len is the radix
+    let max_num_results = charset.len().pow(max_len as u32) as i64;
+    let results = generate_permutations(0, 2000, &charset);
 
     println!("results:");
     println!("{:?}", results);
 }
 
-fn generate_permutations(start: i64, end: i64, char_set: &Vec<char>) -> Option<Vec<String>> {
+fn generate_permutations(start: i64, end: i64, charset: &Vec<char>) -> Option<Vec<String>> {
     let mut results: Vec<String> = vec![];
 
-    // we will need to generate n-many permutations
     for i in start..end {
-        let combination = make_permutation(i, char_set)?;
+        let combination = make_permutation(i, charset)?;
         results.push(combination);
     }
 
     Some(results)
 }
 
-fn make_permutation(i: i64, char_set: &Vec<char>) -> Option<String> {
-    let char_set_len = char_set.len() as i32;
+fn make_permutation(i: i64, charset: &Vec<char>) -> Option<String> {
+    let char_set_len = charset.len() as i32;
 
     let mut result: Vec<char> = Vec::new();
 
@@ -80,7 +75,7 @@ fn make_permutation(i: i64, char_set: &Vec<char>) -> Option<String> {
         let remainder = current_value % char_set_len as i64;
         current_value = current_value / char_set_len as i64;
 
-        result.insert(0, *char_set.get(remainder as usize)?);
+        result.insert(0, *charset.get(remainder as usize)?);
 
         if current_value == 0 {
             break;
